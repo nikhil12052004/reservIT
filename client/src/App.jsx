@@ -9,6 +9,7 @@ import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import PaymentSuccess from './pages/PaymentSucess';
 import PaymentFailed from './pages/PaymentFailed';
+import Events from './pages/Events';
 
 function App() {
     return (
@@ -18,6 +19,7 @@ function App() {
                 <main className="flex-grow w-full">
                     <Routes>
                         <Route path="/" element={<Home />} />
+                        <Route path="/events" element={<Events />} />
                         <Route path="/events/:id" element={<EventDetail />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />

@@ -12,15 +12,19 @@ const AdminDashboard = () => {
 
     const [showEventForm, setShowEventForm] = useState(false);
     const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    date: '',
-    location: '',
-    category: '',
-    totalseats: '',
-    ticketprice: '',
-    imageUrl: ''
-});
+        title: '',
+        description: '',
+        date: '',
+        location: '',
+        category: '',
+        totalseats: '',
+        ticketprice: '',
+        imageUrl: ''
+    });
+
+    // 🔥 AI States
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [aiTags, setAiTags] = useState([]);
 
     useEffect(() => {
         if (!user || user.role !== 'admin') {
@@ -31,45 +35,77 @@ const AdminDashboard = () => {
     }, [user, navigate]);
 
     const fetchData = async () => {
-    try {
-        setLoading(true);
+        try {
+            setLoading(true);
 
-        const [eventsRes, bookingsRes] = await Promise.all([
-            api.get('/events'),
-            api.get('/bookings')
-        ]);
+            const [eventsRes, bookingsRes] = await Promise.all([
+                api.get('/events'),
+                api.get('/bookings')
+            ]);
 
-        console.log("Admin events response:", eventsRes.data);
-        console.log("Admin bookings response:", bookingsRes.data);
+            console.log("Admin events response:", eventsRes.data);
+            console.log("Admin bookings response:", bookingsRes.data);
 
-        const eventsData = Array.isArray(eventsRes.data)
-            ? eventsRes.data
-            : Array.isArray(eventsRes.data.events)
-                ? eventsRes.data.events
-                : [];
+            const eventsData = Array.isArray(eventsRes.data)
+                ? eventsRes.data
+                : Array.isArray(eventsRes.data.events)
+                    ? eventsRes.data.events
+                    : [];
 
-        const bookingsData = Array.isArray(bookingsRes.data)
-            ? bookingsRes.data
-            : Array.isArray(bookingsRes.data.bookings)
-                ? bookingsRes.data.bookings
-                : [];
+            const bookingsData = Array.isArray(bookingsRes.data)
+                ? bookingsRes.data
+                : Array.isArray(bookingsRes.data.bookings)
+                    ? bookingsRes.data.bookings
+                    : [];
 
-        setEvents(eventsData);
-        setBookings(bookingsData);
+            setEvents(eventsData);
+            setBookings(bookingsData);
 
-    } catch (error) {
-        console.error('Error fetching admin data', error);
-        setEvents([]);
-        setBookings([]);
-    } finally {
-        setLoading(false);
-    }
-};
+        } catch (error) {
+            console.error('Error fetching admin data', error);
+            setEvents([]);
+            setBookings([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 🔥 AI Description Generate
+    const handleAIDescribe = async () => {
+        if (!formData.title || formData.title.length < 3) {
+            alert('Please enter a title first (minimum 3 characters)');
+            return;
+        }
+        
+        setIsGenerating(true);
+        try {
+            const response = await api.post('/events/generate-description', {
+                title: formData.title
+            });
+            if (response.data.success) {
+                setFormData({ ...formData, description: response.data.description });
+            }
+        } catch (error) {
+            console.error('AI generation failed:', error);
+            alert('Failed to generate description');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     const handleCreateEvent = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/events', formData);
+            const response = await api.post('/events', {
+                ...formData,
+                useAI: true  // 🔥 AI Tags enable
+            });
+            
+            // 🔥 Save AI tags from response
+            if (response.data.aiGenerated?.tagsList) {
+                setAiTags(response.data.aiGenerated.tagsList);
+            }
+            
             setShowEventForm(false);
             setFormData({
                 title: '',
@@ -81,7 +117,9 @@ const AdminDashboard = () => {
                 ticketprice: '',
                 imageUrl: ''
             });
+            setAiTags([]);
             fetchData();
+            alert('✅ Event created with AI tags!');
         } catch (error) {
             alert(error.response?.data?.message || 'Error creating event');
         }
@@ -120,10 +158,10 @@ const AdminDashboard = () => {
 
     if (loading) return <div className="text-center py-20 text-xl font-semibold">Loading admin panel...</div>;
 
-const safeBookings = Array.isArray(bookings) ? bookings : [];
-const safeEvents = Array.isArray(events) ? events : [];
+    const safeBookings = Array.isArray(bookings) ? bookings : [];
+    const safeEvents = Array.isArray(events) ? events : [];
 
-return (
+    return (
         <div className="max-w-7xl mx-auto">
             <div className="bg-black text-white rounded-2xl p-6 sm:p-8 mb-8 shadow-lg flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
                 <div>
@@ -167,12 +205,70 @@ return (
                 <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-8 animation-slideDown">
                     <h2 className="text-2xl font-bold mb-6 text-gray-800">Create New Event</h2>
                     <form onSubmit={handleCreateEvent} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <input required type="text" placeholder="Event Title" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
-                        <input required type="text" placeholder="Category (e.g., Tech, Music)" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} />
-                        <input required type="date" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} />
-                        <input required type="text" placeholder="Location" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
-                        <input required type="number" placeholder="Total Seats" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.totalseats} onChange={e => setFormData({ ...formData, totalseats: e.target.value })} />
-                        <input required type="number" placeholder="Ticket Price (0 for free)" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.ticketprice} onChange={e => setFormData({ ...formData, ticketprice: e.target.value })} />
+                        {/* 🔥 Title with AI Button */}
+                        <div className="md:col-span-2">
+                            <div className="flex gap-2">
+                                <input
+                                    required
+                                    type="text"
+                                    placeholder="Event Title"
+                                    className="flex-1 border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition"
+                                    value={formData.title}
+                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleAIDescribe}
+                                    disabled={isGenerating}
+                                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:opacity-90 disabled:opacity-50 transition font-medium whitespace-nowrap"
+                                >
+                                    {isGenerating ? '⏳ Generating...' : '✨ AI Describe'}
+                                </button>
+                            </div>
+                            {isGenerating && (
+                                <p className="text-sm text-purple-600 mt-1">🤖 AI is generating description...</p>
+                            )}
+                        </div>
+
+                        <input
+                            required
+                            type="text"
+                            placeholder="Category (e.g., Tech, Music)"
+                            className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition"
+                            value={formData.category}
+                            onChange={e => setFormData({ ...formData, category: e.target.value })}
+                        />
+                        <input
+                            required
+                            type="date"
+                            className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition"
+                            value={formData.date}
+                            onChange={e => setFormData({ ...formData, date: e.target.value })}
+                        />
+                        <input
+                            required
+                            type="text"
+                            placeholder="Location"
+                            className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition"
+                            value={formData.location}
+                            onChange={e => setFormData({ ...formData, location: e.target.value })}
+                        />
+                        <input
+                            required
+                            type="number"
+                            placeholder="Total Seats"
+                            className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition"
+                            value={formData.totalseats}
+                            onChange={e => setFormData({ ...formData, totalseats: e.target.value })}
+                        />
+                        <input
+                            required
+                            type="number"
+                            placeholder="Ticket Price (0 for free)"
+                            className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition"
+                            value={formData.ticketprice}
+                            onChange={e => setFormData({ ...formData, ticketprice: e.target.value })}
+                        />
 
                         <div className="md:col-span-2">
                             <input
@@ -184,8 +280,34 @@ return (
                             />
                         </div>
 
-                        <textarea required placeholder="Event Description" className="border px-4 py-3 rounded-lg md:col-span-2 h-32 focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
-                        <button type="submit" className="md:col-span-2 bg-gray-900 text-white font-bold py-3 mt-2 rounded-lg hover:bg-black transition shadow-md">Publish Event</button>
+                        <textarea
+                            required
+                            placeholder="Event Description"
+                            className="border px-4 py-3 rounded-lg md:col-span-2 h-32 focus:ring-2 focus:ring-gray-700 outline-none transition"
+                            value={formData.description}
+                            onChange={e => setFormData({ ...formData, description: e.target.value })}
+                        />
+
+                        {/* 🔥 AI Tags Display */}
+                        {aiTags.length > 0 && (
+                            <div className="md:col-span-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <p className="text-sm font-medium text-gray-700 mb-2">🧠 AI Generated Tags</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {aiTags.map(tag => (
+                                        <span key={tag} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+                                            #{tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            className="md:col-span-2 bg-gray-900 text-white font-bold py-3 mt-2 rounded-lg hover:bg-black transition shadow-md"
+                        >
+                            Publish Event
+                        </button>
                     </form>
                 </div>
             )}
@@ -207,6 +329,13 @@ return (
                                             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
                                                 <span className="flex items-center gap-1 font-medium"><div className="w-2 h-2 rounded-full bg-blue-500"></div> {new Date(event.date).toLocaleDateString()}</span>
                                                 <span className="flex items-center gap-1 font-medium"><div className={`w-2 h-2 rounded-full ${event.availableSeats > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div> {event.availableSeats}/{event.totalseats} seats</span>
+                                                {/* 🔥 Show AI tags on event list */}
+                                                {event.tags && event.tags.length > 0 && (
+                                                    <span className="flex items-center gap-1 text-xs text-purple-600">
+                                                        🧠 {event.tags.slice(0, 3).join(', ')}
+                                                        {event.tags.length > 3 && ` +${event.tags.length - 3}`}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                         <button onClick={() => handleDeleteEvent(event._id)} className="w-full sm:w-auto text-red-500 hover:text-white hover:bg-red-500 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm shrink-0">

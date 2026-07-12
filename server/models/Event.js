@@ -41,7 +41,22 @@ const EventSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    
+    // ========== AI FIELDS ==========
+    tags: {
+        type: [String],
+        default: []
+    },
+    aiGeneratedTags: {
+        type: Boolean,
+        default: false
+    },
+    aiGeneratedDescription: {
+        type: Boolean,
+        default: false
     }
-},{ timestamps: true });
+    
+}, { timestamps: true });
 
 module.exports = mongoose.model('Event', EventSchema);
