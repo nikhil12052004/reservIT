@@ -1,5 +1,5 @@
 const express = require('express');
-const cors = require('cors');
+const cors = require('cors');  // 🔥 SIRF EK BAAR IMPORT
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
@@ -12,13 +12,15 @@ const { warmupAI } = require('./services/aiWarmup');
 dotenv.config();
 
 const app = express();
-const cors = require('cors');
+
+// 🔥 CORS CONFIG (SIRF EK BAAR)
 app.use(cors({
     origin: ['https://reservittt.netlify.app', 'http://localhost:5173', 'http://localhost:3000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 
 // Routes
