@@ -1,5 +1,5 @@
 const express = require('express');
-const cors = require('cors');  // 🔥 SIRF EK BAAR IMPORT
+const cors = require('cors');  // ✅ Sirf ek baar import
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
@@ -13,9 +13,9 @@ dotenv.config();
 
 const app = express();
 
-// 🔥 CORS CONFIG (SIRF EK BAAR)
+// 🔥🔥🔥 CORS - YEH SAHI TARIKA HAI 🔥🔥🔥
 app.use(cors({
-    origin: ['https://reservittt.netlify.app', 'http://localhost:5173', 'http://localhost:3000'],
+    origin: ['https://reservitt.netlify.app', 'http://localhost:5173', 'http://localhost:3000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -32,10 +32,7 @@ app.use('/api/bookings', bookingRoutes);
 mongoose.connect(process.env.MONGO_URI)
 .then(() => {
     console.log('✅ Connected to MongoDB !!');
-    
-    // 🔥 AI Models Background Mein Load Karo
     warmupAI();
-    
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
         console.log(`🚀 Server is running on port ${PORT}`);
