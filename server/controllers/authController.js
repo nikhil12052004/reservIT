@@ -10,7 +10,7 @@ const generatetoken = (id, role) => {
     return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '7d' });
 }
 
-//Register User
+// ========== REGISTER USER ==========
 exports.registerUser = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
@@ -24,7 +24,7 @@ exports.registerUser = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role: 'user', // Hardcoded to prevent frontend passing role
+            role: 'user',
             isVerified: false
         });
 
@@ -41,7 +41,7 @@ exports.registerUser = async (req, res) => {
     }
 };
 
-//Login User
+// ========== LOGIN USER ==========
 exports.loginUser = async (req, res) => {
     try {
         const {email, password} = req.body;
@@ -56,8 +56,8 @@ exports.loginUser = async (req, res) => {
         }
 
         if(!user.isVerified && user.role === 'user'){
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            await Otp.deleteMany({ email, action: 'account_verification' }); // Clear old OTPs
+            const otp = generateOTP();
+            await Otp.deleteMany({ email, action: 'account_verification' });
             await Otp.create({ email, otp, action: 'account_verification' });
             await sendOTPEmail(email, otp, 'account_verification');
             return res.status(400).json({ 
@@ -77,9 +77,7 @@ exports.loginUser = async (req, res) => {
     }
 };
     
-      
-
-//Verify OTP
+// ========== VERIFY OTP ==========
 exports.verifyOtp = async (req, res) => {
     try {
         const { email, otp } = req.body;
@@ -90,7 +88,7 @@ exports.verifyOtp = async (req, res) => {
         }
 
         const user = await User.findOneAndUpdate({ email }, { isVerified: true }, { new: true });
-        await Otp.deleteOne({ _id: validOTP._id }); // Delete OTP after usage
+        await Otp.deleteOne({ _id: validOTP._id });
 
         res.json({
             message: 'Account verified successfully',
@@ -102,5 +100,25 @@ exports.verifyOtp = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// ========== SEND REGISTRATION OTP (EmailJS) ==========
+exports.sendRegistrationOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const otp = generateOTP();
+        
+        // OTP store in database
+        await Otp.findOneAndDelete({ email, action: 'registration' });
+        await Otp.create({ email, otp, action: 'registration' });
+        
+        // 🔥 NodeMailer se OTP bhejo (Backend se)
+        await sendOTPEmail(email, otp, 'account_verification');
+        
+        res.json({ success: true, message: 'OTP sent for registration' });
+    } catch (error) {
+        console.error('Registration OTP error:', error);
+        res.status(500).json({ error: error.message });
     }
 };

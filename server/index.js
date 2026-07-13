@@ -1,10 +1,10 @@
 const express = require('express');
-const cors = require('cors');  // ✅ Sirf ek baar import
+const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
-const eventRoutes = require('./routes/events.js');
-const bookingRoutes = require('./routes/booking.js');
+const eventRoutes = require('./routes/events');
+const bookingRoutes = require('./routes/booking');
 
 // 🔥 AI Warmup Import
 const { warmupAI } = require('./services/aiWarmup');
@@ -13,7 +13,7 @@ dotenv.config();
 
 const app = express();
 
-// 🔥🔥🔥 CORS - YEH SAHI TARIKA HAI 🔥🔥🔥
+// 🔥 CORS - YEH SAHI TARIKA HAI
 app.use(cors({
     origin: ['https://reservitt.netlify.app', 'http://localhost:5173', 'http://localhost:3000'],
     credentials: true,

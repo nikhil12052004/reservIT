@@ -6,7 +6,7 @@ let generator = null;
 // ========== AUTO-TAGGING ==========
 async function getClassifier() {
     if (!classifier) {
-        console.log('🔄 Loading AI classifier model (first time ~15 sec)...');
+        console.log('🔄 Loading AI classifier model...');
         classifier = await pipeline('zero-shot-classification', 
             'Xenova/distilbert-base-uncased-mnli');
     }
@@ -20,9 +20,7 @@ const EVENT_TAGS = [
     'health', 'education', 'startup', 'innovation',
     'leadership', 'marketing', 'design', 'coding',
     'ai', 'cloud', 'security', 'blockchain', 'python',
-    'javascript', 'react', 'nodejs', 'datascience',
-    'deep learning', 'machine learning', 'devops', 'kubernetes',
-    'aws', 'docker', 'ci/cd', 'mobile', 'web'
+    'javascript', 'react', 'nodejs', 'datascience'
 ];
 
 async function generateTags(title, description) {
@@ -42,47 +40,38 @@ async function generateTags(title, description) {
     }
 }
 
-// ========== DESCRIPTION GENERATOR ==========
+// ========== DESCRIPTION GENERATOR (FLAN-T5) ==========
 async function getGenerator() {
     if (!generator) {
-        console.log('🔄 Loading AI description generator (first time ~20 sec)...');
-        generator = await pipeline('text-generation', 
-            'Xenova/gpt2');
+        console.log('🔄 Loading FLAN-T5 model (better quality)...');
+        generator = await pipeline('text2text-generation', 
+            'Xenova/flan-t5-small');  // 🔥 Small = faster, decent quality
     }
     return generator;
 }
 
 async function generateDescription(title) {
-    try {
-        const generator = await getGenerator();
-        
-        const prompt = `Generate a professional event description for: "${title}". 
-Include: what attendees will learn, who should attend, key benefits, 
-and a call to action. Keep it under 80 words. Description:`;
-        
-        const result = await generator(prompt, {
-            max_new_tokens: 100,
-            temperature: 0.7,
-            do_sample: true,
-            pad_token_id: 50256
-        });
-        
-        let description = result[0].generated_text
-            .replace(prompt, '')
-            .trim();
-        
-        if (description.length < 20) {
-            description = `Join us for an exciting event: "${title}"! 
-Don't miss this opportunity to learn, network, and grow. 
-Register now to secure your spot!`;
-        }
-        
-        return description;
-    } catch (error) {
-        console.error('AI description generation failed:', error);
-        return `Join us for "${title}" - an event you don't want to miss! 
-Limited seats available. Book now!`;
+    // 🔥 Category-based templates (bypass AI)
+    const titleLower = title.toLowerCase();
+    
+    if (titleLower.includes('food') || titleLower.includes('khao') || titleLower.includes('restaurant') || titleLower.includes('cuisine')) {
+        return `🍽️ Get ready for an unforgettable culinary experience at "${title}"! Enjoy delicious food, live music, and a vibrant atmosphere. Perfect for food lovers and families. Don't miss this flavorful event!`;
     }
+    
+    if (titleLower.includes('music') || titleLower.includes('sufi') || titleLower.includes('concert') || titleLower.includes('festival')) {
+        return `🎵 Experience the magic of music at "${title}"! Join us for an evening of soulful melodies, energetic performances, and unforgettable vibes. Book your tickets now!`;
+    }
+    
+    if (titleLower.includes('tech') || titleLower.includes('hackathon') || titleLower.includes('ai') || titleLower.includes('coding')) {
+        return `💻 Join us for "${title}" - a technology event designed to inspire, educate, and connect. Learn from industry experts, network with peers, and discover the latest innovations.`;
+    }
+    
+    if (titleLower.includes('business') || titleLower.includes('startup') || titleLower.includes('entrepreneur') || titleLower.includes('investor')) {
+        return `📈 Elevate your business at "${title}"! Connect with entrepreneurs, investors, and industry leaders. Gain valuable insights and take your business to the next level.`;
+    }
+    
+    // Default fallback
+    return `🎉 Join us for "${title}" - an exciting event designed to inspire, educate, and connect. Limited seats available - register today!`;
 }
 
 module.exports = { generateTags, generateDescription };
